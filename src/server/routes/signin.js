@@ -15,7 +15,7 @@ export default async function signin(req, res) {
     return res.status(500).end(`Error: Type not specified for ${provider.name}`)
   }
 
-  if (provider.type === "oauth" && req.method === "POST") {
+  if (provider.type === "oauth") {
     try {
       const authorizationUrl = await getAuthorizationUrl(req)
       return res.redirect(authorizationUrl)
@@ -23,7 +23,7 @@ export default async function signin(req, res) {
       logger.error("SIGNIN_OAUTH_ERROR", error)
       return res.redirect(`${baseUrl}${basePath}/error?error=OAuthSignin`)
     }
-  } else if (provider.type === "email" && req.method === "POST") {
+  } else if (provider.type === "email") {
     if (!adapter) {
       logger.error("EMAIL_REQUIRES_ADAPTER_ERROR")
       return res.redirect(`${baseUrl}${basePath}/error?error=Configuration`)
@@ -38,7 +38,7 @@ export default async function signin(req, res) {
     // according to RFC 2821, but in practice this causes more problems than
     // it solves. We treat email addresses as all lower case. If anyone
     // complains about this we can make strict RFC 2821 compliance an option.
-    const email = req.body.email?.toLowerCase() ?? null
+    const email = req.body.email.toLowerCase()
 
     // If is an existing user return a user object (otherwise use placeholder)
     const user = (await getUserByEmail(email)) || { email }
@@ -66,17 +66,19 @@ export default async function signin(req, res) {
     }
 
     try {
-      await emailSignin(email, provider, req.options)
+      await emailSignin(email, req.options)
     } catch (error) {
       logger.error("SIGNIN_EMAIL_ERROR", error)
       return res.redirect(`${baseUrl}${basePath}/error?error=EmailSignin`)
     }
 
-    return res.redirect(
-      `${baseUrl}${basePath}/verify-request?provider=${encodeURIComponent(
-        provider.id
-      )}&type=${encodeURIComponent(provider.type)}`
-    )
+    const params = new URLSearchParams({
+      provider: provider.id,
+      type: provider.type,
+    })
+    const url = `${baseUrl}${basePath}/verify-request?${params}`
+
+    return res.redirect(url)
   }
   return res.redirect(`${baseUrl}${basePath}/signin`)
 }

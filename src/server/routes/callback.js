@@ -3,6 +3,7 @@ import callbackHandler from "../lib/callback-handler"
 import * as cookie from "../lib/cookie"
 import dispatchEvent from "../lib/dispatch-event"
 import adapterErrorHandler from "../../adapters/error-handler"
+import { hashToken } from "../lib/signin/email"
 
 /**
  * Handle callbacks from login services
@@ -14,7 +15,6 @@ export default async function callback(req, res) {
     adapter,
     baseUrl,
     basePath,
-    secret,
     cookies,
     callbackUrl,
     pages,
@@ -177,33 +177,22 @@ export default async function callback(req, res) {
         return res.redirect(`${baseUrl}${basePath}/error?error=Configuration`)
       }
 
-      const {
-        getVerificationRequest,
-        deleteVerificationRequest,
-        getUserByEmail,
-      } = adapterErrorHandler(await adapter.getAdapter(req.options), logger)
+      const { getVerificationRequest, getUserByEmail } = adapterErrorHandler(
+        await adapter.getAdapter(req.options),
+        logger
+      )
       const verificationToken = req.query.token
       const email = req.query.email
 
       // Verify email and verification token exist in database
       const invite = await getVerificationRequest({
         identifier: email,
-        verificationToken,
-        secret,
-        provider,
+        hashedToken: hashToken(verificationToken, req.options),
       })
+
       if (!invite) {
         return res.redirect(`${baseUrl}${basePath}/error?error=Verification`)
       }
-
-      // If verification token is valid, delete verification request token from
-      // the database so it cannot be used again
-      await deleteVerificationRequest({
-        identifier: email,
-        verificationToken,
-        secret,
-        provider,
-      })
 
       // If is an existing user return a user object (otherwise use placeholder)
       const profile = (await getUserByEmail(email)) || { email }
