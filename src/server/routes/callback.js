@@ -186,24 +186,24 @@ export default async function callback(req, res) {
       const email = req.query.email
 
       // Verify email and verification token exist in database
-      const invite = await getVerificationRequest(
-        email,
+      const invite = await getVerificationRequest({
+        identifier: email,
         verificationToken,
         secret,
-        provider
-      )
+        provider,
+      })
       if (!invite) {
         return res.redirect(`${baseUrl}${basePath}/error?error=Verification`)
       }
 
       // If verification token is valid, delete verification request token from
       // the database so it cannot be used again
-      await deleteVerificationRequest(
-        email,
+      await deleteVerificationRequest({
+        identifier: email,
         verificationToken,
         secret,
-        provider
-      )
+        provider,
+      })
 
       // If is an existing user return a user object (otherwise use placeholder)
       const profile = (await getUserByEmail(email)) || { email }

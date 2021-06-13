@@ -31,14 +31,14 @@ export default async function email(email, provider, options) {
     )}?email=${encodeURIComponent(email)}&token=${encodeURIComponent(token)}`
 
     // @TODO Create invite (send secret so can be hashed)
-    await createVerificationRequest(
-      email,
+    await createVerificationRequest({
+      identifier: email,
       url,
       token,
       secret,
       provider,
-      options
-    )
+      options,
+    })
 
     // Return promise
     return Promise.resolve()
