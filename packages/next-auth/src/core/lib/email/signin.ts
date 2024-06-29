@@ -1,6 +1,7 @@
 import { randomBytes } from "crypto"
 import { hashToken } from "../utils"
 import type { InternalOptions } from "../../types"
+import type { Cookie } from "../../lib/cookie"
 
 /**
  * Starts an e-mail login flow, by generating a token,
@@ -9,7 +10,10 @@ import type { InternalOptions } from "../../types"
 export default async function email(
   identifier: string,
   options: InternalOptions<"email">
-): Promise<string> {
+): Promise<{
+  redirect: string
+  cookies?: Cookie[]
+}> {
   const { url, adapter, provider, callbackUrl, theme } = options
   // Generate token
   const token =
@@ -25,6 +29,8 @@ export default async function email(
   const params = new URLSearchParams({ callbackUrl, token, email: identifier })
   const _url = `${url}/callback/${provider.id}?${params}`
 
+  const tokenHashed = hashToken(token, options)
+
   await Promise.all([
     // Send to user
     provider.sendVerificationRequest({
@@ -35,17 +41,27 @@ export default async function email(
       provider,
       theme,
     }),
+
     // Save in database
     // @ts-expect-error -- adapter is checked to be defined in `init`
     adapter.createVerificationToken?.({
       identifier,
-      token: hashToken(token, options),
+      token: tokenHashed,
       expires,
     }),
   ])
 
-  return `${url}/verify-request?${new URLSearchParams({
-    provider: provider.id,
-    type: provider.type,
-  })}`
+  let data = {} as any
+
+  if (provider.afterSendVerificationRequest) {
+    data = await provider.afterSendVerificationRequest(identifier, tokenHashed)
+  }
+
+  return {
+    redirect: `${url}/verify-request?${new URLSearchParams({
+      provider: provider.id,
+      type: provider.type,
+    })}`,
+    ...data,
+  }
 }

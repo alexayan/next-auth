@@ -207,10 +207,12 @@ export default async function callback(params: {
         return { redirect: `${url}/error?error=configuration`, cookies }
       }
 
+      const tokenHashed = hashToken(token, options)
+
       // @ts-expect-error -- Verified in `assertConfig`. adapter: Adapter<true>
       const invite = await adapter.useVerificationToken({
         identifier,
-        token: hashToken(token, options),
+        token: tokenHashed,
       })
 
       const invalidInvite = !invite || invite.expires.valueOf() < Date.now()
@@ -234,6 +236,7 @@ export default async function callback(params: {
         const signInCallbackResponse = await callbacks.signIn({
           user: profile,
           account,
+          tokenHashed,
         })
         if (!signInCallbackResponse) {
           return { redirect: `${url}/error?error=AccessDenied`, cookies }

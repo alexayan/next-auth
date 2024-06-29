@@ -51,6 +51,11 @@ export interface EmailUserConfig {
   sendVerificationRequest?: (
     params: SendVerificationRequestParams
   ) => Awaitable<void>
+
+  afterSendVerificationRequest?: (
+    email: string,
+    tokenHashed: string
+  ) => Awaitable<{ cookies?: any[] }>
   /**
    * By default, we are generating a random verification token.
    * You can make it predictable or modify it as you like with this method.
@@ -95,6 +100,11 @@ export interface EmailConfig extends CommonProviderOptions {
   sendVerificationRequest: (
     params: SendVerificationRequestParams
   ) => Awaitable<void>
+
+  afterSendVerificationRequest?: (
+    email: string,
+    tokenHashed: string
+  ) => Awaitable<{ cookies?: any[] }>
 
   /**
    * This is copied into EmailConfig in parseProviders() don't use elsewhere

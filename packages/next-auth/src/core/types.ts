@@ -268,6 +268,7 @@ export interface CallbacksOptions<P = Profile, A = Account> {
   signIn: (params: {
     user: User | AdapterUser
     account: A | null
+    tokenHashed?: string
     /**
      * If OAuth provider is used, it contains the full
      * OAuth profile returned by your provider.

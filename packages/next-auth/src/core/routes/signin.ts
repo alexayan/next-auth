@@ -88,8 +88,8 @@ export default async function signin(params: {
     }
 
     try {
-      const redirect = await emailSignin(email, options)
-      return { redirect }
+      const data = await emailSignin(email, options)
+      return data
     } catch (error) {
       logger.error("SIGNIN_EMAIL_ERROR", { error, providerId: provider.id })
       return { redirect: `${url}/error?error=EmailSignin` }
